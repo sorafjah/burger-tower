@@ -175,6 +175,7 @@ const CFG = {
   BEND_INSTANT : 1.35,  // 曲がりの合計がこれを超えたら「横倒し」扱いで即アウト
   REACH        : 2.2,   // 空中の具材がタワー中心から離れられる最大半径
   SUPPORT      : 0.92,  // 下の具材の半径×これ を超えると滑り落ちる
+  RECOVERY_BONUS: 0.40, // 傾いている時、立て直し方向に置く場合の許容距離の割増（+40%まで）
   JITTER       : 0.030, // 着地のズレ（高いほど大きい）
   JITTER_GAIN  : 0.50,
   HOVER_GAP    : 1.7,
@@ -480,10 +481,23 @@ function updateZoneRing(){
   zoneRing.position.set(0,lp.def.h+0.02,0);
   zoneRing.scale.setScalar(lp.def.r*CFG.SUPPORT);
   zoneRing.visible=true;
+  orientRingFlat(zoneRing, lp);
 }
 
 /* 現在つかんでいる具材の位置からガイドを更新し、相対座標(rx,rz)を求める。
    具材はシーン直下（ワールド座標）にいるので、タワーの傾きの影響を受けない。 */
+/* リング（ガイド等）を、乗っている具材が傾いていても常に
+   ワールド空間で水平な円として見せる。中心位置は具材の傾きを
+   反映した正しい場所のまま、向きだけを平らに補正する。
+   これをしないと、傾き＋カメラの遠近が重なって細い楕円に潰れ、
+   狙いにくくなる。 */
+const _flatQuat=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,0)); // RingGeometryの法線(+Z)を+Yへ
+const _parentQuat=new THREE.Quaternion();
+function orientRingFlat(ring, lp){
+  lp.node.getWorldQuaternion(_parentQuat);
+  ring.quaternion.copy(_parentQuat).invert().multiply(_flatQuat);
+}
+
 function layoutCurrent(){
   const c=G.current; if(!c) return;
   const lp=lastPiece();
@@ -506,13 +520,14 @@ function layoutCurrent(){
   // 見た目だけ浮かせる（指で隠れず、落ちる先はガイドリングで分かる）
   c.obj.position.set(c.wx, t.y+CFG.HOVER_GAP, c.wz);
   const d=Math.hypot(dx,dz);
-  const ok=d<=lp.def.r*CFG.SUPPORT;
+  const ok=d<=effectivePlaceLimit(lp,dx,dz);
   guide.visible=true;
   if(guide.parent!==lp.node) lp.node.add(guide);
   guide.position.set(dx,lp.def.h+0.03,dz);
   guide.scale.setScalar(c.def.r);
   guide.material.color.setHex(ok?0x3A2317:0xE8402A);
   guide.material.opacity=ok?0.4:0.8;
+  orientRingFlat(guide, lp);
 }
 
 /* =========================================================
@@ -538,6 +553,24 @@ function computeStress(){
   let worst=0;
   for(let i=1;i<jt.length;i++) if(jt[i].s>jt[worst].s) worst=i;
   G.worst=worst; G.ratio=jt[worst].s;
+}
+
+/* 具材を置ける半径（許容距離）を求める。
+   通常は下の具材の半径×SUPPORT だが、タワーが傾いている（warn/danger）ときは
+   「立て直しになる方向＝一番危ない継ぎ目の負荷と逆方向」に置くぶんには
+   少し多めに許容する。傾きを悪化させる方向には一切甘くしない。
+   これにより、ガイドリングが遠近で細く見えて狙いにくい局面でも、
+   立て直そうとする操作だけは成功しやすくなる。 */
+function effectivePlaceLimit(lp, rx, rz){
+  const baseLim = lp.def.r*CFG.SUPPORT;
+  if(G.tension==='calm') return baseLim;
+  const wj=G.joints[G.worst]; if(!wj) return baseLim;
+  const wn=Math.hypot(wj.dx,wj.dz); if(wn<1e-4) return baseLim;
+  const recX=-wj.dx/wn, recZ=-wj.dz/wn; // 立て直しになる方向（負荷と逆向き）
+  const pn=Math.hypot(rx,rz)||1;
+  const cosT=(rx/pn)*recX+(rz/pn)*recZ; // 立て直し方向とどれだけ揃っているか(-1〜1)
+  const bonus=Math.max(0,cosT)*CFG.RECOVERY_BONUS;
+  return baseLim*(1+bonus);
 }
 
 function evaluateTension(){
@@ -662,7 +695,7 @@ function doClear(){
   const bonus=1000+Math.round(G.stackH*100);
   G.score+=bonus;
   SFX.clear(); el.finishBtn.disabled=true;
-  setTimeout(()=>showResult(true,bonus),800);
+  setTimeout(()=>showResult(true,bonus),3000);
 }
 
 /* =========================================================
@@ -707,8 +740,8 @@ function onUp(){
   G.dragging=false;
   const c=G.current, lp=lastPiece();
   c.held=false;
-  // 下の具材から外れすぎていたら滑り落ちる
-  if(Math.hypot(c.rx,c.rz) > lp.def.r*CFG.SUPPORT){ dropOff(); return; }
+  // 下の具材から外れすぎていたら滑り落ちる（傾いている時は立て直し方向だけ少し甘くなる）
+  if(Math.hypot(c.rx,c.rz) > effectivePlaceLimit(lp,c.rx,c.rz)){ dropOff(); return; }
   guide.visible=false;
   G.state='drop';
   const lpTopWorld=new THREE.Vector3(0,lp.def.h,0);
@@ -897,17 +930,20 @@ function updateJoints(dt){
     }
   }
   G.bend=total;
+  // 置ける範囲リングも、タワーが傾き続ける間は毎フレーム向きを合わせ直す
+  if(zoneRing.visible && zoneRing.parent){ orientRingFlat(zoneRing, {node:zoneRing.parent}); }
   // 横倒しに近い角度になったら、負荷が閾値未満でも崩壊させる
   if(G.state==='play' && total>=CFG.BEND_INSTANT){ startCollapse(); return; }
   // 警告リング：いちばん負荷の高い継ぎ目に出す（worst=0 はお皿との接地）
   if(G.tension!=='calm' && G.pieces[G.worst]){
-    const host=G.pieces[G.worst].node;
-    if(warnRing.parent!==host) host.add(warnRing);   // 同じ親なら付け替えない
+    const host=G.pieces[G.worst];
+    if(warnRing.parent!==host.node) host.node.add(warnRing);   // 同じ親なら付け替えない
     const rad = G.worst===0 ? CFG.PLATE_R : G.pieces[G.worst-1].def.r*CFG.SUPPORT_FRAC;
     warnRing.position.set(0,0.02,0);
     warnRing.scale.setScalar(rad);
     warnRing.material.color.setHex(G.tension==='danger'?0xE8402A:0xFFC93C);
     warnRing.visible=true;
+    orientRingFlat(warnRing, host);
   } else warnRing.visible=false;
 }
 
@@ -1011,6 +1047,7 @@ resize(); tick();
    ========================================================= */
 window.__G=G;
 window.__CAMERA_REF=camera; // デバッグ・座標検証用
+window.__GUIDE_REF=guide;
 window.__game={
   get state(){return G.state;},
   get tension(){return G.tension;},
