@@ -29,18 +29,18 @@ html,body{
 .lbl{font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.65;line-height:1.2;}
 .val{font-size:34px;font-weight:700;line-height:1;letter-spacing:-.02em;}
 .sub{font-size:12px;font-weight:700;opacity:.75;margin-top:2px;}
-#hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;
-  display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:150px;}
-#nextCard{width:100%;}
+#hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;right:10px;
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+#nextCard{min-width:110px;}
 #nextList{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
 .nx{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;}
 .nx.second{opacity:.5;font-size:11px;}
 .sw{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink);flex:0 0 auto;}
 .nx.second .sw{width:13px;height:13px;border-radius:4px;}
 
-#balance{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);
-  right:calc(96px + env(safe-area-inset-right,0px));
-  display:flex;flex-direction:column;align-items:center;gap:5px;width:150px;}
+#balance{position:absolute;left:50%;transform:translateX(-50%);
+  top:calc(env(safe-area-inset-top,0px) + 110px);
+  display:flex;flex-direction:column;align-items:center;gap:5px;width:min(210px,58vw);}
 #tiltIcon{width:44px;height:34px;display:flex;flex-direction:column;justify-content:center;gap:2px;
   transform-origin:50% 100%;}
 #tiltIcon i{display:block;height:6px;border-radius:3px;border:2px solid var(--ink);}
@@ -53,28 +53,17 @@ html,body{
 #barText{font-size:12px;font-weight:700;color:var(--ink);background:var(--cream);
   border:2px solid var(--ink);border-radius:10px;padding:1px 10px;letter-spacing:.06em;white-space:nowrap;}
 
-#countdown{position:absolute;top:calc(env(safe-area-inset-top,0px) + 96px);
-  right:calc(96px + env(safe-area-inset-right,0px));width:150px;
-  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;transform:scale(.9);}
-#countdown.on{opacity:1;transform:scale(1);}
+#countdown{position:absolute;left:50%;transform:translateX(-50%) scale(.9);
+  top:calc(env(safe-area-inset-top,0px) + 186px);width:min(210px,58vw);
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;}
+#countdown.on{opacity:1;transform:translateX(-50%) scale(1);}
 #cdTrack{position:relative;height:24px;background:var(--cream);border:3px solid var(--ink);
   border-radius:13px;overflow:hidden;box-shadow:0 3px 0 var(--ink);}
 #cdFill{height:100%;width:100%;background:var(--ketchup);}
 #cdText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
   font-size:11px;font-weight:700;color:var(--ink);letter-spacing:.06em;}
 
-/* 具材トレイ（右端・縦） */
-#tray{position:absolute;top:0;bottom:0;right:0;width:86px;
-  background:linear-gradient(180deg,rgba(255,246,228,.0),rgba(255,246,228,.55) 14%,rgba(255,246,228,.55) 86%,rgba(255,246,228,0));
-  display:flex;align-items:center;justify-content:center;}
-#trayCard{background:var(--cream);border:3px solid var(--ink);border-radius:18px;
-  box-shadow:0 4px 0 var(--ink);padding:8px 6px;display:flex;flex-direction:column;
-  align-items:center;gap:6px;}
-#trayLabel{font-size:10px;font-weight:700;opacity:.6;letter-spacing:.1em;}
-#trayPiece{width:64px;height:64px;border-radius:50%;border:3px dashed rgba(58,35,23,.35);}
-#trayHint{font-size:9px;font-weight:700;opacity:.55;text-align:center;line-height:1.3;}
-
-#bottom{position:absolute;left:0;right:96px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+#bottom{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
   display:flex;flex-direction:column;align-items:center;gap:9px;}
 #pieceName{background:var(--cream);border:3px solid var(--ink);border-radius:14px;
   box-shadow:0 4px 0 var(--ink);padding:5px 16px;font-size:14px;font-weight:700;color:var(--ink);}
@@ -124,6 +113,10 @@ html,body{
       <div class="val" id="layerVal">0</div>
       <div class="sub">スコア <span id="scoreVal">0</span> ／ <span id="heightVal">0</span>cm</div>
     </div>
+    <div class="card" id="nextCard">
+      <div class="lbl">つぎ</div>
+      <div id="nextList"></div>
+    </div>
   </div>
   <div id="balance">
     <div id="tiltIcon"><i></i><i></i><i></i></div>
@@ -132,14 +125,6 @@ html,body{
   </div>
   <div id="countdown">
     <div id="cdTrack"><div id="cdFill"></div><span id="cdText">くずれる！</span></div>
-  </div>
-  <div id="tray">
-    <div id="trayCard">
-      <div id="trayLabel">つぎ</div>
-      <div id="trayPiece"></div>
-      <div id="trayHint">つまんで<br>スワイプ</div>
-      <div id="nextList"></div>
-    </div>
   </div>
   <div id="bottom">
     <div id="pieceName">よういちゅう</div>
@@ -151,7 +136,7 @@ html,body{
       <h1>ハンバーガータワー</h1>
       <div class="detail">どこまで高く積めるか</div>
       <ul class="rules">
-        <li>指でつまみ、タワーまでスワイプしてはなす。</li>
+        <li>浮いている具材を指で動かして、はなすと落ちる。</li>
         <li>かなり傾いても、落ちなければセーフ。</li>
         <li>好きなときに「完成」でバンズを置けばクリア。</li>
       </ul>
@@ -187,7 +172,7 @@ const CFG = {
   JOINT_TILT   : 0.11,  // 負荷1.0の継ぎ目が曲がる角度(rad)（見た目用・控えめ）
   MAX_BEND     : 0.85,  // 曲がりの合計上限(rad≒49°)。1継ぎ目の角度は別途抑えてあるので大きく傾けてよい
   BEND_INSTANT : 1.15,  // 曲がりの合計がこれを超えたら「横倒し」扱いで即アウト
-  REACH        : 1.35,  // タワー上での移動許容半径（トレイ距離より必ず小さくすること）
+  REACH        : 2.2,   // 空中の具材がタワー中心から離れられる最大半径
   SUPPORT      : 0.92,  // 下の具材の半径×これ を超えると滑り落ちる
   JITTER       : 0.030, // 着地のズレ（高いほど大きい）
   JITTER_GAIN  : 0.50,
@@ -369,26 +354,6 @@ scene.fog=new THREE.Fog(0x7ED0E8,30,72);
 const camera=new THREE.PerspectiveCamera(46,1,0.1,220);
 camera.position.set(0,4.6,10.5);
 const lookAt=new THREE.Vector3(0,1.6,0);
-scene.add(camera); // カメラの子オブジェクト（トレイの具材）を描画するために必要
-
-/* ---- トレイアンカー：常にカメラの正面・画面上の同じ位置に映る ----
-   カメラがタワーの高さに応じてズーム/移動しても、この中の具材は
-   HTMLのトレイ枠（#tray、右端）から画面上でズレない。 */
-const trayAnchor=new THREE.Group();
-camera.add(trayAnchor);
-function updateTrayAnchor(){
-  const el=document.getElementById('trayPiece');
-  const r=el ? el.getBoundingClientRect() : null;
-  const w=window.innerWidth, h=window.innerHeight;
-  // HTMLの実際の丸の中心座標を使う（レイアウトがflexで可変なため、
-  // 固定比率の見積もりより実測の方が画面サイズが変わっても正確）
-  const xPx = r ? r.left+r.width/2 : w-43;
-  const yPx = r ? r.top+r.height/2 : h*0.46;
-  const ndcX=(xPx/w)*2-1, ndcY=-(yPx/h)*2+1;
-  const fovY=camera.fov*Math.PI/180, tanY=Math.tan(fovY/2), tanX=tanY*camera.aspect;
-  const depth=6.5; // カメラ前方の固定距離。タワーの高さに関係なく見た目の大きさが一定になる
-  trayAnchor.position.set(ndcX*depth*tanX, ndcY*depth*tanY, -depth);
-}
 
 scene.add(new THREE.HemisphereLight(0xEAF7FF,0x8A6A4A,1.05));
 const sun=new THREE.DirectionalLight(0xFFF4DC,1.25);
@@ -479,34 +444,21 @@ function topWorld(){
   lp.node.localToWorld(_topTmp);
   return _topTmp;
 }
+/* ---- 具材の生成：タワーの真上の空中に、まっすぐな姿勢で浮かべる ----
+   親はシーン直下（ワールド座標）。カメラやタワーの傾きを引き継がないので、
+   具材が斜めに見えることがない。これを直接つかんで動かす。 */
 function spawnCurrent(forceKey){
   const key=forceKey||pullKey();
   const def=DEFS[key];
   const obj=def.build();
-  obj.position.set(0,0,0);
-  obj.scale.setScalar(0.62);
-  trayAnchor.add(obj);
-  G.current={key,def,obj,held:false,inTray:true,placing:false,rx:0,rz:0,wx:0,wy:0,wz:0};
+  const t=topWorld();
+  obj.position.set(t.x, t.y+CFG.HOVER_GAP, t.z);
+  scene.add(obj);
+  G.current={key,def,obj,held:false,placing:true,
+             rx:0,rz:0,wx:t.x,wy:t.y+CFG.HOVER_GAP,wz:t.z};
+  layoutCurrent();
   updateNextUI();
-  syncTrayDot();
   el.pieceName.innerHTML = G.finishing ? 'さいごの <b>バンズ</b> を置く！' : 'いま：<b>'+def.name+'</b>';
-}
-
-/* トレイの具材をワールド座標につかみ出す。以後は通常のドラッグと同じ経路を通る。 */
-function grabCurrentToWorld(){
-  const c=G.current; if(!c||!c.inTray) return;
-  scene.attach(c.obj); // ワールド座標を保ったまま親をカメラ→シーンに変更
-  c.obj.scale.setScalar(1);
-  c.inTray=false;
-  c.wx=c.obj.position.x; c.wy=c.obj.position.y; c.wz=c.obj.position.z;
-}
-/* つかんでいる具材をトレイに戻す（置けなかった/離した時）。 */
-function returnCurrentToTray(){
-  const c=G.current; if(!c) return;
-  trayAnchor.add(c.obj);
-  c.obj.position.set(0,0,0);
-  c.obj.scale.setScalar(0.62);
-  c.inTray=true;
 }
 
 function updateZoneRing(){
@@ -517,37 +469,31 @@ function updateZoneRing(){
   zoneRing.visible=true;
 }
 
-function syncTrayDot(){
-  // 具材そのものは3D側（トレイアンカー）に描画されるため、
-  // ここでは枠だけを軽く強調する程度に留める。
-  el.trayPiece.style.borderStyle = G.current ? 'solid' : 'dashed';
-}
-
-/* 現在つまんでいる具材が、タワー直前具材の受け皿範囲の真上にあるか判定し、
-   範囲内ならガイド表示＋相対座標(rx,rz)を更新する。 */
+/* 現在つかんでいる具材の位置からガイドを更新し、相対座標(rx,rz)を求める。
+   具材はシーン直下（ワールド座標）にいるので、タワーの傾きの影響を受けない。 */
 function layoutCurrent(){
-  const c=G.current; if(!c||c.inTray) return; // トレイにいる間はアンカー基準のローカル座標のままでよい
-  c.obj.position.set(c.wx,c.wy,c.wz);
+  const c=G.current; if(!c) return;
   const lp=lastPiece();
+  // 直前具材の中心からどれだけ離れているか（傾いた座標系に変換して測る）
   const local=lp.node.worldToLocal(new THREE.Vector3(c.wx, c.wy, c.wz));
-  const overTop = (c.wy > topWorld().y - 0.35);   // 実際の頂上より上（少し余裕を持たせる）
-  const d=Math.hypot(local.x,local.z);
-  // タワーに置ける範囲は「下の具材の受け皿＋掴んだ手の遊び」までとし、
-  // トレイの位置（タワー中心から離れた場所）がこの範囲に入り込まないようにする
-  const placeLimit = lp.def.r + CFG.REACH*0.35;
-  c.placing = overTop && d<=placeLimit;
-  if(c.placing){
-    c.rx=local.x; c.rz=local.z;
-    const ok=d<=lp.def.r*CFG.SUPPORT;
-    guide.visible=true;
-    if(guide.parent!==lp.node) lp.node.add(guide);
-    guide.position.set(local.x,lp.def.h+0.03,local.z);
-    guide.scale.setScalar(c.def.r);
-    guide.material.color.setHex(ok?0x3A2317:0xE8402A);
-    guide.material.opacity=ok?0.4:0.8;
-  } else {
-    guide.visible=false;
+  let dx=local.x, dz=local.z;
+  const d0=Math.hypot(dx,dz);
+  // タワーから離れすぎないように制限（空中の具材はタワーの近くを漂う）
+  if(d0>CFG.REACH){ dx=dx/d0*CFG.REACH; dz=dz/d0*CFG.REACH;
+    const back=lp.node.localToWorld(new THREE.Vector3(dx, local.y, dz));
+    c.wx=back.x; c.wz=back.z;
   }
+  c.obj.position.set(c.wx,c.wy,c.wz);
+  c.rx=dx; c.rz=dz;
+  c.placing=true;
+  const d=Math.hypot(dx,dz);
+  const ok=d<=lp.def.r*CFG.SUPPORT;
+  guide.visible=true;
+  if(guide.parent!==lp.node) lp.node.add(guide);
+  guide.position.set(dx,lp.def.h+0.03,dz);
+  guide.scale.setScalar(c.def.r);
+  guide.material.color.setHex(ok?0x3A2317:0xE8402A);
+  guide.material.opacity=ok?0.4:0.8;
 }
 
 /* =========================================================
@@ -721,13 +667,10 @@ function applyPointer(clientX,clientY){
 }
 function onDown(e){
   ensureAudio();
-  if(G.state!=='play'||!G.current||G.current.held) return;
+  if(G.state!=='play'||!G.current) return;
   const t=e.touches?e.touches[0]:e;
-  const rect=canvas.getBoundingClientRect();
-  const trayZonePx = 96; // #tray の幅と合わせる（右端の掴める帯）
-  if(!G.current.placing && (t.clientX-rect.left) < rect.width-trayZonePx) return; // トレイ帯の外は無視
+  // 空中の具材はどこをタップしてもつかめる（画面のどこからでもドラッグ開始）
   G.dragging=true; G.current.held=true; SFX.pick();
-  if(G.current.inTray) grabCurrentToWorld();
   applyPointer(t.clientX,t.clientY);
 }
 function onMove(e){
@@ -740,11 +683,7 @@ function onUp(){
   G.dragging=false;
   const c=G.current, lp=lastPiece();
   c.held=false;
-  if(!c.placing){
-    // タワーの上まで運ばれていない → トレイに戻す
-    returnCurrentToTray();
-    return;
-  }
+  // 下の具材から外れすぎていたら滑り落ちる
   if(Math.hypot(c.rx,c.rz) > lp.def.r*CFG.SUPPORT){ dropOff(); return; }
   guide.visible=false;
   G.state='drop';
@@ -777,7 +716,6 @@ const el={
   heightVal:document.getElementById('heightVal'),
   layerVal:document.getElementById('layerVal'),
   nextList:document.getElementById('nextList'),
-  trayPiece:document.getElementById('trayPiece'),
   tiltIcon:document.getElementById('tiltIcon'),
   barFill:document.getElementById('barFill'),
   barText:document.getElementById('barText'),
@@ -796,13 +734,12 @@ function showToast(msg){
   toastTimer=setTimeout(()=>el.toast.classList.remove('on'),900);
 }
 function updateNextUI(){
-  if(G.finishing){ el.nextList.innerHTML='<div class="nx">これで最後</div>'; updateTrayAnchor(); return; }
+  if(G.finishing){ el.nextList.innerHTML='<div class="nx">これで最後</div>'; return; }
   const a=G.queue[0], b=G.queue[1];
   let h='';
   if(a) h+='<div class="nx"><span class="sw" style="background:'+DEFS[a].color+'"></span>'+DEFS[a].name+'</div>';
   if(b) h+='<div class="nx second"><span class="sw" style="background:'+DEFS[b].color+'"></span>'+DEFS[b].name+'</div>';
   el.nextList.innerHTML=h;
-  updateTrayAnchor();
 }
 function updateHUD(){
   el.scoreVal.textContent=G.score;
@@ -1031,7 +968,6 @@ function resize(){
   const w=window.innerWidth, h=window.innerHeight;
   renderer.setSize(w,h,false);
   camera.aspect=w/h; camera.updateProjectionMatrix();
-  updateTrayAnchor();
 }
 window.addEventListener('resize',resize);
 window.addEventListener('orientationchange',()=>setTimeout(resize,120));
@@ -1077,7 +1013,6 @@ window.__game={
     // 現在のワールド座標に変換して落とす。ドラッグ操作と同じ判定経路（placing判定→onUp）を通る。
     drop(rx,rz){
       if(G.state!=='play'||!G.current) return false;
-      if(G.current.inTray) grabCurrentToWorld();
       const base=topWorld().clone(); // 直前具材の実際の頂上ワールド座標
       G.current.wx=base.x+rx; G.current.wy=base.y+0.8; G.current.wz=base.z+rz;
       layoutCurrent();
