@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>ハンバーガータワー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#3A2317; --cream:#FFF6E4; --ketchup:#E8402A;
+  --mustard:#FFC93C; --bun:#E9A853; --lettuce:#7ED957; --sky:#7ED0E8;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{
+  width:100%;height:100%;overflow:hidden;position:fixed;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+  -webkit-text-size-adjust:100%;font-family:'BIZ UDPGothic',sans-serif;
+  background:var(--sky);overscroll-behavior:none;
+}
+#cv{display:block;width:100%;height:100%;}
+#ui{position:fixed;inset:0;pointer-events:none;}
+.card{background:var(--cream);border:3px solid var(--ink);border-radius:16px;
+  box-shadow:0 4px 0 var(--ink);padding:8px 12px;color:var(--ink);}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.1em;opacity:.65;line-height:1.2;}
+.val{font-size:34px;font-weight:700;line-height:1;letter-spacing:-.02em;}
+.sub{font-size:12px;font-weight:700;opacity:.75;margin-top:2px;}
+#hud{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);left:10px;
+  display:flex;flex-direction:column;align-items:flex-start;gap:8px;width:150px;}
+#nextCard{width:100%;}
+#nextList{display:flex;flex-direction:column;gap:5px;margin-top:4px;}
+.nx{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;}
+.nx.second{opacity:.5;font-size:11px;}
+.sw{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink);flex:0 0 auto;}
+.nx.second .sw{width:13px;height:13px;border-radius:4px;}
+
+#balance{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);
+  right:calc(96px + env(safe-area-inset-right,0px));
+  display:flex;flex-direction:column;align-items:center;gap:5px;width:150px;}
+#tiltIcon{width:44px;height:34px;display:flex;flex-direction:column;justify-content:center;gap:2px;
+  transform-origin:50% 100%;}
+#tiltIcon i{display:block;height:6px;border-radius:3px;border:2px solid var(--ink);}
+#tiltIcon i:nth-child(1){background:var(--bun);width:100%;}
+#tiltIcon i:nth-child(2){background:var(--lettuce);width:88%;margin:0 auto;}
+#tiltIcon i:nth-child(3){background:var(--bun);width:100%;}
+#bar{width:100%;height:14px;background:var(--cream);border:3px solid var(--ink);
+  border-radius:9px;overflow:hidden;box-shadow:0 3px 0 var(--ink);}
+#barFill{height:100%;width:0%;background:var(--lettuce);transition:width .12s linear,background .2s;}
+#barText{font-size:12px;font-weight:700;color:var(--ink);background:var(--cream);
+  border:2px solid var(--ink);border-radius:10px;padding:1px 10px;letter-spacing:.06em;white-space:nowrap;}
+
+#countdown{position:absolute;top:calc(env(safe-area-inset-top,0px) + 96px);
+  right:calc(96px + env(safe-area-inset-right,0px));width:150px;
+  opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;transform:scale(.9);}
+#countdown.on{opacity:1;transform:scale(1);}
+#cdTrack{position:relative;height:24px;background:var(--cream);border:3px solid var(--ink);
+  border-radius:13px;overflow:hidden;box-shadow:0 3px 0 var(--ink);}
+#cdFill{height:100%;width:100%;background:var(--ketchup);}
+#cdText{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--ink);letter-spacing:.06em;}
+
+/* 具材トレイ（右端・縦） */
+#tray{position:absolute;top:0;bottom:0;right:0;width:86px;
+  background:linear-gradient(180deg,rgba(255,246,228,.0),rgba(255,246,228,.55) 14%,rgba(255,246,228,.55) 86%,rgba(255,246,228,0));
+  display:flex;align-items:center;justify-content:center;}
+#trayCard{background:var(--cream);border:3px solid var(--ink);border-radius:18px;
+  box-shadow:0 4px 0 var(--ink);padding:8px 6px;display:flex;flex-direction:column;
+  align-items:center;gap:6px;}
+#trayLabel{font-size:10px;font-weight:700;opacity:.6;letter-spacing:.1em;}
+#trayPiece{width:64px;height:64px;border-radius:50%;border:3px dashed rgba(58,35,23,.35);}
+#trayHint{font-size:9px;font-weight:700;opacity:.55;text-align:center;line-height:1.3;}
+
+#bottom{position:absolute;left:0;right:96px;bottom:calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;flex-direction:column;align-items:center;gap:9px;}
+#pieceName{background:var(--cream);border:3px solid var(--ink);border-radius:14px;
+  box-shadow:0 4px 0 var(--ink);padding:5px 16px;font-size:14px;font-weight:700;color:var(--ink);}
+#pieceName b{color:var(--ketchup);}
+#finishBtn{pointer-events:auto;min-height:52px;padding:0 26px;font-family:inherit;
+  font-size:17px;font-weight:700;color:var(--ink);background:var(--mustard);
+  border:3px solid var(--ink);border-radius:26px;box-shadow:0 5px 0 var(--ink);
+  transition:transform .06s,box-shadow .06s;}
+#finishBtn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
+#finishBtn[disabled]{opacity:.4;}
+
+#toast{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) scale(.8);
+  background:var(--ink);color:var(--cream);padding:10px 20px;border-radius:14px;
+  font-size:17px;font-weight:700;letter-spacing:.04em;opacity:0;
+  transition:opacity .18s,transform .18s;}
+#toast.on{opacity:1;transform:translate(-50%,-50%) scale(1);}
+
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(58,35,23,.55);pointer-events:auto;padding:20px;
+  opacity:0;visibility:hidden;transition:opacity .25s;}
+#overlay.on{opacity:1;visibility:visible;}
+#panel{background:var(--cream);border:4px solid var(--ink);border-radius:24px;
+  box-shadow:0 8px 0 var(--ink);padding:24px 22px;max-width:340px;width:100%;
+  text-align:center;color:var(--ink);max-height:88vh;overflow:auto;}
+#panel h1{font-size:26px;line-height:1.25;margin-bottom:4px;}
+#panel h2{font-size:23px;margin-bottom:10px;}
+#panel .big{font-size:46px;font-weight:700;line-height:1;margin:8px 0 2px;}
+#panel .detail{font-size:14px;font-weight:700;opacity:.75;margin-bottom:14px;}
+#panel .rules{text-align:left;font-size:13.5px;line-height:1.75;margin:12px 0 18px;}
+#panel .rules li{margin-left:18px;}
+#panel .bonus{display:inline-block;background:var(--mustard);border:3px solid var(--ink);
+  border-radius:12px;padding:3px 12px;font-size:14px;font-weight:700;margin-bottom:12px;}
+.btn{pointer-events:auto;width:100%;min-height:54px;font-family:inherit;font-size:18px;
+  font-weight:700;background:var(--ketchup);border:3px solid var(--ink);border-radius:27px;
+  box-shadow:0 5px 0 var(--ink);color:var(--cream);transition:transform .06s,box-shadow .06s;}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink);}
+@media (prefers-reduced-motion: reduce){*{transition-duration:.01ms !important;}}
+</style>
+</head>
+<body>
+<!-- build: 2026-07-23 -->
+<canvas id="cv"></canvas>
+<div id="ui">
+  <div id="hud">
+    <div class="card" id="scoreCard">
+      <div class="lbl">段</div>
+      <div class="val" id="layerVal">0</div>
+      <div class="sub">スコア <span id="scoreVal">0</span> ／ <span id="heightVal">0</span>cm</div>
+    </div>
+  </div>
+  <div id="balance">
+    <div id="tiltIcon"><i></i><i></i><i></i></div>
+    <div id="bar"><div id="barFill"></div></div>
+    <div id="barText">あんてい</div>
+  </div>
+  <div id="countdown">
+    <div id="cdTrack"><div id="cdFill"></div><span id="cdText">くずれる！</span></div>
+  </div>
+  <div id="tray">
+    <div id="trayCard">
+      <div id="trayLabel">つぎ</div>
+      <div id="trayPiece"></div>
+      <div id="trayHint">つまんで<br>スワイプ</div>
+      <div id="nextList"></div>
+    </div>
+  </div>
+  <div id="bottom">
+    <div id="pieceName">よういちゅう</div>
+    <button id="finishBtn" disabled>バンズをのせて完成！</button>
+  </div>
+  <div id="toast"></div>
+  <div id="overlay" class="on">
+    <div id="panel">
+      <h1>ハンバーガータワー</h1>
+      <div class="detail">どこまで高く積めるか</div>
+      <ul class="rules">
+        <li>指でつまみ、タワーまでスワイプしてはなす。</li>
+        <li>かなり傾いても、落ちなければセーフ。</li>
+        <li>好きなときに「完成」でバンズを置けばクリア。</li>
+      </ul>
+      <button class="btn" id="startBtn">はじめる</button>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+    "cannon-es": "https://cdn.jsdelivr.net/npm/cannon-es@0.20.0/dist/cannon-es.js"
+  }
+}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+
+/* =========================================================
+   CONFIG（チューニングはすべてここ）
+   ========================================================= */
+const CFG = {
+  SUPPORT_FRAC : 0.85,  // 継ぎ目の許容半径 = 下の具材の半径 × これ（崩壊判定用・緩め）
+  PLATE_R      : 1.60,  // お皿の支持半径（崩壊判定用・緩め）
+  WARN         : 0.55,
+  DANGER       : 0.85,
+  INSTANT      : 1.45,
+  HYST         : 0.06,
+  DANGER_TIME  : 4.0,
+  TILT_VIS_POW : 1.0,   // 見た目の傾き＝負荷の何乗で出すか（1.0=負荷に比例、控えめ）
+  JOINT_TILT   : 0.11,  // 負荷1.0の継ぎ目が曲がる角度(rad)（見た目用・控えめ）
+  MAX_BEND     : 0.85,  // 曲がりの合計上限(rad≒49°)。1継ぎ目の角度は別途抑えてあるので大きく傾けてよい
+  BEND_INSTANT : 1.15,  // 曲がりの合計がこれを超えたら「横倒し」扱いで即アウト
+  REACH        : 1.35,  // タワー上での移動許容半径（トレイ距離より必ず小さくすること）
+  SUPPORT      : 0.92,  // 下の具材の半径×これ を超えると滑り落ちる
+  JITTER       : 0.030, // 着地のズレ（高いほど大きい）
+  JITTER_GAIN  : 0.50,
+  HOVER_GAP    : 1.7,
+  DROP_G       : 46,
+};
+const PLATE_TOP = 0.42;
+
+/* =========================================================
+   具材
+   ========================================================= */
+const C = {
+  bun:0xE9A853, bunLight:0xF6D9A6, patty:0x6B3A20, pattyTop:0x8A4E2C,
+  cheese:0xFFC93C, tomato:0xE8402A, tomatoIn:0xE0552F, tomatoSeed:0xFFD9A0,
+  lettuce:0x7ED957, lettuce2:0x5FBF3D, pickle:0x4E9E3E, pickleIn:0x8FD46E,
+  onion:0xF2E6D5, onionIn:0xEAD8BC, sesame:0xFFF3D8,
+};
+const rnd=(a,b)=>a+Math.random()*(b-a);
+function mat(c){ return new THREE.MeshStandardMaterial({color:c, roughness:.82, metalness:0}); }
+function meshOf(geo,c){ const m=new THREE.Mesh(geo,mat(c)); m.castShadow=true; m.receiveShadow=true; return m; }
+
+function buildBunBottom(){
+  const g=new THREE.Group();
+  const b=meshOf(new THREE.CylinderGeometry(1.55,1.40,0.50,32),C.bun); b.position.y=-0.02; g.add(b);
+  const t=meshOf(new THREE.CylinderGeometry(1.50,1.50,0.08,32),C.bunLight); t.position.y=0.21; g.add(t);
+  return g;
+}
+function buildBunTop(){
+  const g=new THREE.Group();
+  const dome=meshOf(new THREE.SphereGeometry(1.55,32,18,0,Math.PI*2,0,Math.PI*0.5),C.bun);
+  dome.scale.y=0.88/1.55; dome.position.y=-0.44; g.add(dome);
+  const base=meshOf(new THREE.CylinderGeometry(1.55,1.52,0.10,32),C.bunLight);
+  base.position.y=-0.40; g.add(base);
+  for(let i=0;i<10;i++){
+    const a=rnd(0,Math.PI*2), r=rnd(.25,1.05);
+    const s=meshOf(new THREE.SphereGeometry(0.085,8,6),C.sesame);
+    const h=Math.sqrt(Math.max(0,1-(r/1.55)**2))*0.88;
+    s.position.set(Math.cos(a)*r, -0.44+h+0.01, Math.sin(a)*r);
+    s.scale.set(1.5,0.55,1); s.rotation.y=a; g.add(s);
+  }
+  return g;
+}
+function buildPatty(){
+  const g=new THREE.Group();
+  g.add(meshOf(new THREE.CylinderGeometry(1.32,1.28,0.44,30),C.patty));
+  const t=meshOf(new THREE.CylinderGeometry(1.26,1.26,0.06,30),C.pattyTop); t.position.y=0.19; g.add(t);
+  return g;
+}
+function buildCheese(){
+  const g=new THREE.Group();
+  g.add(meshOf(new THREE.BoxGeometry(2.30,0.10,2.30),C.cheese));
+  g.rotation.y=rnd(0.15,0.55); // はみ出しすぎて隣接具材と干渉しない範囲に抑える
+  return g;
+}
+function buildTomato(){
+  const g=new THREE.Group();
+  // 外皮（赤。面積のほとんどを占めるようにする＝「ほぼ赤」に見せる）
+  g.add(meshOf(new THREE.CylinderGeometry(1.24,1.24,0.24,28),C.tomato));
+  // 果肉（皮より一回り小さくして、赤が主役に見えるようにする）
+  const flesh=meshOf(new THREE.CylinderGeometry(0.62,0.62,0.26,26),C.tomatoIn);
+  g.add(flesh);
+  // 種は控えめに、小さく数を減らす
+  const seedCount=5;
+  for(let i=0;i<seedCount;i++){
+    const a=(i/seedCount)*Math.PI*2+rnd(-.08,.08);
+    const seg=meshOf(new THREE.SphereGeometry(0.17,8,6),C.tomatoSeed);
+    seg.scale.set(1,0.30,0.55);   // 厚み0.24を超えないように潰す
+    seg.position.set(Math.cos(a)*0.30, 0.005, Math.sin(a)*0.30);
+    seg.rotation.y=a;
+    g.add(seg);
+  }
+  // 中心の芯（小さめ）
+  const core=meshOf(new THREE.CylinderGeometry(0.09,0.09,0.22,12),C.tomatoSeed);
+  g.add(core);
+  return g;
+}
+function buildLettuce(){
+  const g=new THREE.Group();
+  const H=0.34; // DEFS.lettuce.h と一致させる（はみ出し防止）
+  for(let i=0;i<9;i++){
+    const a=(i/9)*Math.PI*2+rnd(-.15,.15);
+    const f=meshOf(new THREE.SphereGeometry(0.56,10,8), i%2?C.lettuce:C.lettuce2);
+    f.scale.set(1,0.22,1);
+    // 縦方向のばらつきは厚みの範囲内に収め、はみ出しを防ぐ
+    f.position.set(Math.cos(a)*1.02, rnd(-H*0.10,H*0.10), Math.sin(a)*1.02);
+    g.add(f);
+  }
+  const c=meshOf(new THREE.SphereGeometry(0.72,12,8),C.lettuce);
+  c.scale.set(1,0.26,1); g.add(c);
+  return g;
+}
+function buildPickle(){
+  const g=new THREE.Group();
+  for(let i=0;i<3;i++){
+    const a=(i/3)*Math.PI*2+rnd(-.2,.2);
+    const p=new THREE.Group();
+    p.add(meshOf(new THREE.CylinderGeometry(0.46,0.46,0.20,18),C.pickle));
+    p.add(meshOf(new THREE.CylinderGeometry(0.30,0.30,0.19,16),C.pickleIn));
+    p.position.set(Math.cos(a)*0.56, rnd(-.01,.01), Math.sin(a)*0.56);
+    g.add(p);
+  }
+  return g;
+}
+function buildOnion(){
+  const g=new THREE.Group();
+  // チューブ半径は「厚み/2」以内に収める（はみ出すと下の具材にめり込む）
+  [[0.98,0.13,C.onion],[0.63,0.11,C.onionIn],[0.34,0.09,C.onion]].forEach(([R,r,col])=>{
+    const o=meshOf(new THREE.TorusGeometry(R,r,8,26),col); o.rotation.x=Math.PI/2; g.add(o);
+  });
+  g.rotation.y=rnd(0,Math.PI);
+  return g;
+}
+
+const DEFS = {
+  bunBottom:{name:'バンズ（下）',color:'#E9A853',r:1.55,h:0.50,w:3.0,build:buildBunBottom},
+  patty    :{name:'パティ',      color:'#6B3A20',r:1.32,h:0.44,w:4.2,build:buildPatty},
+  cheese   :{name:'チーズ',      color:'#FFC93C',r:1.42,h:0.10,w:0.7,build:buildCheese},
+  tomato   :{name:'トマト',      color:'#E8402A',r:1.24,h:0.24,w:2.2,build:buildTomato},
+  lettuce  :{name:'レタス',      color:'#7ED957',r:1.50,h:0.34,w:0.8,build:buildLettuce},
+  pickle   :{name:'ピクルス',    color:'#4E9E3E',r:1.02,h:0.20,w:1.1,build:buildPickle},
+  onion    :{name:'オニオン',    color:'#F2E6D5',r:1.13,h:0.28,w:0.9,build:buildOnion},
+  bunTop   :{name:'バンズ（上）',color:'#E9A853',r:1.55,h:0.88,w:3.0,build:buildBunTop},
+};
+const BAG_KEYS=['patty','cheese','tomato','lettuce','pickle','onion'];
+
+/* =========================================================
+   Audio
+   ========================================================= */
+let actx=null;
+function ensureAudio(){
+  if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; } }
+  if(actx.state==='suspended') actx.resume();
+}
+function tone(freq,dur,type='sine',vol=0.16,slideTo=0){
+  if(!actx) return;
+  const t=actx.currentTime, o=actx.createOscillator(), g=actx.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(30,slideTo),t+dur);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+0.012);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(actx.destination); o.start(t); o.stop(t+dur+0.03);
+}
+function noiseBurst(dur,vol=0.3,f0=1400,f1=120){
+  if(!actx) return;
+  const t=actx.currentTime, n=Math.floor(actx.sampleRate*dur);
+  const buf=actx.createBuffer(1,n,actx.sampleRate), d=buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+  const src=actx.createBufferSource(); src.buffer=buf;
+  const flt=actx.createBiquadFilter(); flt.type='lowpass';
+  flt.frequency.setValueAtTime(f0,t); flt.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  const g=actx.createGain(); g.gain.setValueAtTime(vol,t);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  src.connect(flt); flt.connect(g); g.connect(actx.destination); src.start(t);
+}
+const SFX={
+  pick :()=>tone(520,0.07,'sine',0.10),
+  place:()=>{ tone(430,0.07,'sine',0.16); setTimeout(()=>tone(720,0.10,'sine',0.13),55); },
+  miss :()=>tone(300,0.28,'sawtooth',0.13,110),
+  warn :()=>tone(660,0.10,'square',0.09),
+  beep :(p)=>tone(760+p*340,0.07,'square',0.13),
+  crash:()=>{ noiseBurst(0.85,0.34); tone(190,0.7,'sawtooth',0.14,60); },
+  clear:()=>{ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>tone(f,0.24,'triangle',0.17),i*95)); },
+};
+
+/* =========================================================
+   Three.js
+   ========================================================= */
+const canvas=document.getElementById('cv');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x7ED0E8);
+scene.fog=new THREE.Fog(0x7ED0E8,30,72);
+
+const camera=new THREE.PerspectiveCamera(46,1,0.1,220);
+camera.position.set(0,4.6,10.5);
+const lookAt=new THREE.Vector3(0,1.6,0);
+scene.add(camera); // カメラの子オブジェクト（トレイの具材）を描画するために必要
+
+/* ---- トレイアンカー：常にカメラの正面・画面上の同じ位置に映る ----
+   カメラがタワーの高さに応じてズーム/移動しても、この中の具材は
+   HTMLのトレイ枠（#tray、右端）から画面上でズレない。 */
+const trayAnchor=new THREE.Group();
+camera.add(trayAnchor);
+function updateTrayAnchor(){
+  const el=document.getElementById('trayPiece');
+  const r=el ? el.getBoundingClientRect() : null;
+  const w=window.innerWidth, h=window.innerHeight;
+  // HTMLの実際の丸の中心座標を使う（レイアウトがflexで可変なため、
+  // 固定比率の見積もりより実測の方が画面サイズが変わっても正確）
+  const xPx = r ? r.left+r.width/2 : w-43;
+  const yPx = r ? r.top+r.height/2 : h*0.46;
+  const ndcX=(xPx/w)*2-1, ndcY=-(yPx/h)*2+1;
+  const fovY=camera.fov*Math.PI/180, tanY=Math.tan(fovY/2), tanX=tanY*camera.aspect;
+  const depth=6.5; // カメラ前方の固定距離。タワーの高さに関係なく見た目の大きさが一定になる
+  trayAnchor.position.set(ndcX*depth*tanX, ndcY*depth*tanY, -depth);
+}
+
+scene.add(new THREE.HemisphereLight(0xEAF7FF,0x8A6A4A,1.05));
+const sun=new THREE.DirectionalLight(0xFFF4DC,1.25);
+sun.position.set(6,14,8); sun.castShadow=true;
+sun.shadow.mapSize.set(1024,1024);
+sun.shadow.camera.near=1; sun.shadow.camera.far=52;
+sun.shadow.camera.left=-12; sun.shadow.camera.right=12;
+sun.shadow.camera.top=12; sun.shadow.camera.bottom=-12;
+sun.shadow.bias=-0.0014;
+scene.add(sun); scene.add(sun.target);
+
+const table=new THREE.Mesh(new THREE.CylinderGeometry(16,16,0.6,48),
+  new THREE.MeshStandardMaterial({color:0xF3E2C7,roughness:.95}));
+table.position.y=-0.3; table.receiveShadow=true; scene.add(table);
+
+const plate=new THREE.Group();
+const pl=new THREE.Mesh(new THREE.CylinderGeometry(2.75,2.35,0.34,40),
+  new THREE.MeshStandardMaterial({color:0xFFFFFF,roughness:.5}));
+pl.position.y=0.17; pl.castShadow=true; pl.receiveShadow=true; plate.add(pl);
+const rim=new THREE.Mesh(new THREE.TorusGeometry(2.72,0.10,8,44),
+  new THREE.MeshStandardMaterial({color:0xE8402A,roughness:.6}));
+rim.rotation.x=Math.PI/2; rim.position.y=0.34; plate.add(rim);
+scene.add(plate);
+
+const stackRoot=new THREE.Group();
+stackRoot.position.y=PLATE_TOP;
+scene.add(stackRoot);
+
+// 配置ガイド（毎回いちばん上のノードに付け替える）
+const guide=new THREE.Mesh(new THREE.RingGeometry(0.86,1.10,36),
+  new THREE.MeshBasicMaterial({color:0x3A2317,transparent:true,opacity:.45,
+    side:THREE.DoubleSide,depthWrite:false}));
+guide.rotation.x=-Math.PI/2; guide.visible=false;
+
+// いちばん危ない継ぎ目に出す警告リング
+const warnRing=new THREE.Mesh(new THREE.TorusGeometry(1,0.075,8,32),
+  new THREE.MeshBasicMaterial({color:0xE8402A,transparent:true,opacity:.9,depthWrite:false}));
+warnRing.rotation.x=Math.PI/2; warnRing.visible=false;
+
+// 置ける範囲（これを超えると滑り落ちる）
+const zoneRing=new THREE.Mesh(new THREE.RingGeometry(0.965,1,48),
+  new THREE.MeshBasicMaterial({color:0x3A2317,transparent:true,opacity:.30,
+    side:THREE.DoubleSide,depthWrite:false}));
+zoneRing.rotation.x=-Math.PI/2; zoneRing.visible=false;
+
+/* =========================================================
+   ゲーム状態
+   ========================================================= */
+const G={
+  state:'title', tension:'calm',
+  pieces:[],           // {key,def,ox,oz,baseY,node,obj}
+  joints:[],           // {dx,dz,s}
+  worst:0, ratio:0, bend:0,
+  stackH:0, bag:[], queue:[],
+  current:null,        // {key,def,obj,rx,rz}
+  dragging:false, drop:null, squash:[],
+  cdLeft:0, cdBeep:0, wobblePhase:0,
+  score:0, layers:0, missed:0,
+  finishing:false, frames:0, elapsed:0, collapseAge:0,
+};
+let physWorld=null, physPairs=[];
+
+/* ---- 袋方式 ---- */
+function refillBag(){
+  const b=BAG_KEYS.slice();
+  for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; }
+  if(G.queue.length && G.queue[G.queue.length-1]===b[0] && b.length>1) [b[0],b[1]]=[b[1],b[0]];
+  G.bag=b;
+}
+function pullKey(){
+  while(G.queue.length<3){ if(!G.bag.length) refillBag(); G.queue.push(G.bag.shift()); }
+  return G.queue.shift();
+}
+
+const lastPiece=()=>G.pieces[G.pieces.length-1];
+
+/* ---- 具材の生成：トレイ（画面右のワールド固定位置）に出す ----
+   掴んでいる間はシーン直下・ワールド座標で動かす。
+   タワーの真上まで運んだときだけ、直前具材からの相対座標(rx,rz)を
+   持たせて判定・傾き計算に使う。 */
+/* 直前具材の"実際の"頂上ワールド座標。タワーが曲がると理論値より下がるので、
+   高さ関係の判定は必ずこれを基準にする（理論値 baseY を使うと曲がった時に破綻する）。 */
+const _topTmp=new THREE.Vector3();
+function topWorld(){
+  const lp=lastPiece();
+  if(!lp) return _topTmp.set(0,PLATE_TOP,0);
+  _topTmp.set(0,lp.def.h,0);
+  lp.node.localToWorld(_topTmp);
+  return _topTmp;
+}
+function spawnCurrent(forceKey){
+  const key=forceKey||pullKey();
+  const def=DEFS[key];
+  const obj=def.build();
+  obj.position.set(0,0,0);
+  obj.scale.setScalar(0.62);
+  trayAnchor.add(obj);
+  G.current={key,def,obj,held:false,inTray:true,placing:false,rx:0,rz:0,wx:0,wy:0,wz:0};
+  updateNextUI();
+  syncTrayDot();
+  el.pieceName.innerHTML = G.finishing ? 'さいごの <b>バンズ</b> を置く！' : 'いま：<b>'+def.name+'</b>';
+}
+
+/* トレイの具材をワールド座標につかみ出す。以後は通常のドラッグと同じ経路を通る。 */
+function grabCurrentToWorld(){
+  const c=G.current; if(!c||!c.inTray) return;
+  scene.attach(c.obj); // ワールド座標を保ったまま親をカメラ→シーンに変更
+  c.obj.scale.setScalar(1);
+  c.inTray=false;
+  c.wx=c.obj.position.x; c.wy=c.obj.position.y; c.wz=c.obj.position.z;
+}
+/* つかんでいる具材をトレイに戻す（置けなかった/離した時）。 */
+function returnCurrentToTray(){
+  const c=G.current; if(!c) return;
+  trayAnchor.add(c.obj);
+  c.obj.position.set(0,0,0);
+  c.obj.scale.setScalar(0.62);
+  c.inTray=true;
+}
+
+function updateZoneRing(){
+  const lp=lastPiece(); if(!lp) return;
+  if(zoneRing.parent!==lp.node) lp.node.add(zoneRing);
+  zoneRing.position.set(0,lp.def.h+0.02,0);
+  zoneRing.scale.setScalar(lp.def.r*CFG.SUPPORT);
+  zoneRing.visible=true;
+}
+
+function syncTrayDot(){
+  // 具材そのものは3D側（トレイアンカー）に描画されるため、
+  // ここでは枠だけを軽く強調する程度に留める。
+  el.trayPiece.style.borderStyle = G.current ? 'solid' : 'dashed';
+}
+
+/* 現在つまんでいる具材が、タワー直前具材の受け皿範囲の真上にあるか判定し、
+   範囲内ならガイド表示＋相対座標(rx,rz)を更新する。 */
+function layoutCurrent(){
+  const c=G.current; if(!c||c.inTray) return; // トレイにいる間はアンカー基準のローカル座標のままでよい
+  c.obj.position.set(c.wx,c.wy,c.wz);
+  const lp=lastPiece();
+  const local=lp.node.worldToLocal(new THREE.Vector3(c.wx, c.wy, c.wz));
+  const overTop = (c.wy > topWorld().y - 0.35);   // 実際の頂上より上（少し余裕を持たせる）
+  const d=Math.hypot(local.x,local.z);
+  // タワーに置ける範囲は「下の具材の受け皿＋掴んだ手の遊び」までとし、
+  // トレイの位置（タワー中心から離れた場所）がこの範囲に入り込まないようにする
+  const placeLimit = lp.def.r + CFG.REACH*0.35;
+  c.placing = overTop && d<=placeLimit;
+  if(c.placing){
+    c.rx=local.x; c.rz=local.z;
+    const ok=d<=lp.def.r*CFG.SUPPORT;
+    guide.visible=true;
+    if(guide.parent!==lp.node) lp.node.add(guide);
+    guide.position.set(local.x,lp.def.h+0.03,local.z);
+    guide.scale.setScalar(c.def.r);
+    guide.material.color.setHex(ok?0x3A2317:0xE8402A);
+    guide.material.opacity=ok?0.4:0.8;
+  } else {
+    guide.visible=false;
+  }
+}
+
+/* =========================================================
+   継ぎ目ごとの負荷
+   joint i = 具材 i-1 の上面（i=0 はお皿との接地）
+   その継ぎ目より上に乗っている分の重心が、
+   下の具材の接地円からどれだけはみ出しているか＝負荷
+   ========================================================= */
+function computeStress(){
+  const P=G.pieces, n=P.length;
+  if(!n){ G.joints=[]; G.ratio=0; G.worst=0; return; }
+  const jt=[];
+  let mx=0,mz=0,mt=0;
+  for(let k=0;k<n;k++){ const w=P[k].def.w; mx+=w*P[k].ox; mz+=w*P[k].oz; mt+=w; }
+  jt.push({dx:mx/mt, dz:mz/mt, s:Math.hypot(mx/mt,mz/mt)/CFG.PLATE_R});
+  for(let i=1;i<n;i++){
+    let ax=0,az=0,at=0;
+    for(let k=i;k<n;k++){ const w=P[k].def.w; ax+=w*P[k].ox; az+=w*P[k].oz; at+=w; }
+    const b=P[i-1], dx=ax/at-b.ox, dz=az/at-b.oz;
+    jt.push({dx,dz, s:Math.hypot(dx,dz)/(b.def.r*CFG.SUPPORT_FRAC)});
+  }
+  G.joints=jt;
+  let worst=0;
+  for(let i=1;i<jt.length;i++) if(jt[i].s>jt[worst].s) worst=i;
+  G.worst=worst; G.ratio=jt[worst].s;
+}
+
+function evaluateTension(){
+  const r=G.ratio;
+  if(r>=CFG.INSTANT){ startCollapse(); return; }
+  if(r>=CFG.DANGER){
+    if(G.tension!=='danger'){ G.tension='danger'; G.cdLeft=CFG.DANGER_TIME; G.cdBeep=0; SFX.warn(); }
+  } else if(r>=CFG.WARN){
+    if(G.tension==='danger'){ if(r<CFG.DANGER-CFG.HYST){ G.tension='warn'; G.cdLeft=0; showToast('もどした！'); } }
+    else if(G.tension==='calm'){ G.tension='warn'; SFX.warn(); }
+  } else {
+    if(G.tension!=='calm'){ if(G.tension==='danger') showToast('もどした！'); G.tension='calm'; G.cdLeft=0; }
+  }
+}
+
+/* ---- 配置の確定 ---- */
+function commitPiece(){
+  const c=G.current, lp=lastPiece();
+  // 着地のズレ（高いほど大きい）＝完璧には積めない
+  const j=CFG.JITTER*(1+G.stackH*CFG.JITTER_GAIN);
+  const rx=c.rx+rnd(-j,j), rz=c.rz+rnd(-j,j);
+
+  const node=new THREE.Group();
+  node.position.set(rx, lp.def.h, rz);
+  const nodeBaseY = lp.def.h;   // 傾き補正の基準（updateJointsでここから持ち上げる）
+  lp.node.add(node);
+  scene.attach(c.obj); // ワールド座標を保ったまま親から外す
+  node.attach(c.obj);
+  c.obj.position.set(0, c.def.h*0.5, 0);
+  c.obj.scale.setScalar(1);
+
+  const p={key:c.key, def:c.def, ox:lp.ox+rx, oz:lp.oz+rz, baseY:G.stackH, node, obj:c.obj, nodeBaseY};
+  G.pieces.push(p);
+  G.stackH+=c.def.h;
+  G.layers=G.pieces.length;
+  G.current=null;
+  G.squash.push({obj:c.obj, t:0});
+  SFX.place();
+
+  computeStress();
+  G.score=Math.round(G.stackH*100)+Math.max(0,G.layers-1)*150;
+  updateZoneRing();
+
+  if(G.finishing){
+    if(G.ratio>=CFG.DANGER) startCollapse(); else doClear();
+    return;
+  }
+  evaluateTension();
+  if(G.state==='collapse') return;
+  G.state='play';
+  spawnCurrent();
+}
+
+function dropOff(){
+  const c=G.current;
+  G.missed++; SFX.miss(); showToast('落ちた！');
+  c.obj.scale.setScalar(1);
+  const n=Math.hypot(c.rx,c.rz)||1;
+  G.squash.push({obj:c.obj,t:0,fall:{vx:c.rx/n*3.4, vz:c.rz/n*3.4, vy:1.2, spin:rnd(-6,6)}});
+  G.current=null; G.state='play';
+  spawnCurrent(G.finishing?'bunTop':null);
+}
+
+/* =========================================================
+   崩壊（ここだけ cannon-es の剛体シミュレーション）
+   ========================================================= */
+function startCollapse(){
+  if(G.state==='collapse') return;
+  G.state='collapse'; G.tension='danger'; G.collapseAge=0;
+  guide.visible=false; warnRing.visible=false; zoneRing.visible=false;
+  SFX.crash();
+
+  physWorld=new CANNON.World({gravity:new CANNON.Vec3(0,-24,0)});
+  physWorld.broadphase=new CANNON.SAPBroadphase(physWorld);
+  physWorld.defaultContactMaterial.friction=0.42;
+  physWorld.defaultContactMaterial.restitution=0.12;
+  const floor=new CANNON.Body({mass:0, shape:new CANNON.Plane()});
+  floor.quaternion.setFromEuler(-Math.PI/2,0,0);
+  physWorld.addBody(floor);
+  const plateBody=new CANNON.Body({mass:0, shape:new CANNON.Box(new CANNON.Vec3(2.2,0.21,2.2))});
+  plateBody.position.set(0,0.21,0);
+  physWorld.addBody(plateBody);
+
+  // いちばん危ない継ぎ目の向きに倒れる
+  const wj=G.joints[G.worst]||{dx:1,dz:0};
+  const n=Math.hypot(wj.dx,wj.dz)||1;
+  const dx=wj.dx/n, dz=wj.dz/n;
+
+  if(G.current){ G.current.obj.parent&&G.current.obj.parent.remove(G.current.obj); G.current=null; }
+  if(guide.parent) guide.parent.remove(guide);
+  if(warnRing.parent) warnRing.parent.remove(warnRing);
+  if(zoneRing.parent) zoneRing.parent.remove(zoneRing);
+
+  physPairs=[];
+  const snapshot=G.pieces.slice();
+  for(let i=0;i<snapshot.length;i++){
+    const p=snapshot[i];
+    p.obj.updateWorldMatrix(true,false);
+    const wp=new THREE.Vector3(), wq=new THREE.Quaternion(), ws=new THREE.Vector3();
+    p.obj.matrixWorld.decompose(wp,wq,ws);
+    scene.attach(p.obj);
+    p.obj.scale.set(1,1,1);
+    const half=new CANNON.Vec3(p.def.r*0.78, Math.max(0.06,p.def.h*0.5), p.def.r*0.78);
+    const body=new CANNON.Body({mass:Math.max(0.4,p.def.w*0.5), shape:new CANNON.Box(half)});
+    body.position.set(wp.x,wp.y,wp.z);
+    body.quaternion.set(wq.x,wq.y,wq.z,wq.w);
+    // 折れた継ぎ目より上ほど強く飛ぶ
+    const lev=i>=G.worst ? 0.8+(i-G.worst)*0.22 : 0.15;
+    body.velocity.set(dx*3.0*lev+rnd(-.5,.5), rnd(0.3,1.5), dz*3.0*lev+rnd(-.5,.5));
+    body.angularVelocity.set(rnd(-4,4),rnd(-3,3),rnd(-4,4));
+    body.linearDamping=0.02; body.angularDamping=0.10;
+    physWorld.addBody(body);
+    physPairs.push({body,obj:p.obj});
+  }
+  el.finishBtn.disabled=true;
+  setTimeout(()=>{ if(G.state==='collapse') showResult(false); },2200);
+}
+
+function doClear(){
+  G.state='clear'; guide.visible=false; warnRing.visible=false; zoneRing.visible=false;
+  G.tension='calm'; G.cdLeft=0;
+  const bonus=1000+Math.round(G.stackH*100);
+  G.score+=bonus;
+  SFX.clear(); el.finishBtn.disabled=true;
+  setTimeout(()=>showResult(true,bonus),800);
+}
+
+/* =========================================================
+   入力
+   ========================================================= */
+const ray=new THREE.Raycaster();
+const dragPlane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+const ndc=new THREE.Vector2();
+const hit=new THREE.Vector3();
+
+function applyPointer(clientX,clientY){
+  const c=G.current; if(!c) return;
+  const rect=canvas.getBoundingClientRect();
+  ndc.x=((clientX-rect.left)/rect.width)*2-1;
+  ndc.y=-((clientY-rect.top-56)/rect.height)*2+1;   // 指で隠れないよう少し上を狙う
+  dragPlane.constant=-c.wy;
+  ray.setFromCamera(ndc,camera);
+  if(!ray.ray.intersectPlane(dragPlane,hit)) return;
+  c.wx=hit.x; c.wz=hit.z;
+  layoutCurrent();
+}
+function onDown(e){
+  ensureAudio();
+  if(G.state!=='play'||!G.current||G.current.held) return;
+  const t=e.touches?e.touches[0]:e;
+  const rect=canvas.getBoundingClientRect();
+  const trayZonePx = 96; // #tray の幅と合わせる（右端の掴める帯）
+  if(!G.current.placing && (t.clientX-rect.left) < rect.width-trayZonePx) return; // トレイ帯の外は無視
+  G.dragging=true; G.current.held=true; SFX.pick();
+  if(G.current.inTray) grabCurrentToWorld();
+  applyPointer(t.clientX,t.clientY);
+}
+function onMove(e){
+  if(!G.dragging) return;
+  const t=e.touches?e.touches[0]:e;
+  applyPointer(t.clientX,t.clientY);
+}
+function onUp(){
+  if(!G.dragging||G.state!=='play'||!G.current) return;
+  G.dragging=false;
+  const c=G.current, lp=lastPiece();
+  c.held=false;
+  if(!c.placing){
+    // タワーの上まで運ばれていない → トレイに戻す
+    returnCurrentToTray();
+    return;
+  }
+  if(Math.hypot(c.rx,c.rz) > lp.def.r*CFG.SUPPORT){ dropOff(); return; }
+  guide.visible=false;
+  G.state='drop';
+  const lpTopWorld=new THREE.Vector3(0,lp.def.h,0);
+  lp.node.localToWorld(lpTopWorld);
+  G.drop={y:c.wy, v:0, target:lpTopWorld.y+c.def.h*0.5};
+}
+canvas.addEventListener('pointerdown',onDown);
+window.addEventListener('pointermove',onMove);
+window.addEventListener('pointerup',onUp);
+window.addEventListener('pointercancel',onUp);
+
+/* ---- iPad：ズーム/バウンス防止 ---- */
+['gesturestart','gesturechange','gestureend'].forEach(n=>
+  document.addEventListener(n,e=>e.preventDefault(),{passive:false}));
+document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
+let lastTouchEnd=0;
+document.addEventListener('touchend',e=>{
+  const now=Date.now();
+  if(now-lastTouchEnd<300) e.preventDefault();
+  lastTouchEnd=now;
+},{passive:false});
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+
+/* =========================================================
+   UI
+   ========================================================= */
+const el={
+  scoreVal:document.getElementById('scoreVal'),
+  heightVal:document.getElementById('heightVal'),
+  layerVal:document.getElementById('layerVal'),
+  nextList:document.getElementById('nextList'),
+  trayPiece:document.getElementById('trayPiece'),
+  tiltIcon:document.getElementById('tiltIcon'),
+  barFill:document.getElementById('barFill'),
+  barText:document.getElementById('barText'),
+  countdown:document.getElementById('countdown'),
+  cdFill:document.getElementById('cdFill'),
+  pieceName:document.getElementById('pieceName'),
+  finishBtn:document.getElementById('finishBtn'),
+  toast:document.getElementById('toast'),
+  overlay:document.getElementById('overlay'),
+  panel:document.getElementById('panel'),
+};
+let toastTimer=null;
+function showToast(msg){
+  el.toast.textContent=msg; el.toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.toast.classList.remove('on'),900);
+}
+function updateNextUI(){
+  if(G.finishing){ el.nextList.innerHTML='<div class="nx">これで最後</div>'; updateTrayAnchor(); return; }
+  const a=G.queue[0], b=G.queue[1];
+  let h='';
+  if(a) h+='<div class="nx"><span class="sw" style="background:'+DEFS[a].color+'"></span>'+DEFS[a].name+'</div>';
+  if(b) h+='<div class="nx second"><span class="sw" style="background:'+DEFS[b].color+'"></span>'+DEFS[b].name+'</div>';
+  el.nextList.innerHTML=h;
+  updateTrayAnchor();
+}
+function updateHUD(){
+  el.scoreVal.textContent=G.score;
+  el.heightVal.textContent=Math.round(G.stackH*10);
+  el.layerVal.textContent=G.layers;
+  el.barFill.style.width=Math.min(100,(G.ratio/CFG.INSTANT)*100).toFixed(1)+'%';
+  if(G.tension==='danger'){ el.barFill.style.background='#E8402A'; el.barText.textContent='あぶない！'; }
+  else if(G.tension==='warn'){ el.barFill.style.background='#FFC93C'; el.barText.textContent='かたむき中'; }
+  else { el.barFill.style.background='#7ED957'; el.barText.textContent='あんてい'; }
+  el.tiltIcon.style.transform='rotate('+(G.bend*-57.3).toFixed(2)+'deg)';
+  if(G.tension==='danger'&&G.state!=='clear'){
+    el.countdown.classList.add('on');
+    el.cdFill.style.width=Math.max(0,(G.cdLeft/CFG.DANGER_TIME)*100).toFixed(1)+'%';
+  } else el.countdown.classList.remove('on');
+}
+document.getElementById('startBtn').addEventListener('click',()=>{
+  ensureAudio(); el.overlay.classList.remove('on'); resetGame();
+});
+el.finishBtn.addEventListener('click',()=>{
+  if(G.state!=='play'||G.finishing||G.pieces.length<2) return;
+  ensureAudio();
+  G.finishing=true;
+  if(G.current){ G.current.obj.parent&&G.current.obj.parent.remove(G.current.obj); G.current=null; }
+  spawnCurrent('bunTop');
+  el.finishBtn.disabled=true;
+  showToast('最後のバンズ！');
+});
+function showResult(cleared,bonus){
+  const h=Math.round(G.stackH*10);
+  el.panel.innerHTML=
+    '<h2>'+(cleared?'かんせい！':'くずれた…')+'</h2>'+
+    (cleared?'<div class="bonus">クリアボーナス +'+bonus+'</div>':'')+
+    '<div class="lbl" style="font-size:12px;opacity:.65">スコア</div>'+
+    '<div class="big">'+G.score+'</div>'+
+    '<div class="detail">高さ '+h+'cm ／ '+G.layers+'段'+(G.missed?' ／ 落とした '+G.missed:'')+'</div>'+
+    '<button class="btn" id="againBtn">もういちど</button>';
+  document.getElementById('againBtn').addEventListener('click',()=>{
+    el.overlay.classList.remove('on'); resetGame();
+  });
+  el.overlay.classList.add('on');
+}
+
+/* =========================================================
+   リセット
+   ========================================================= */
+function clearScene(){
+  for(const p of G.pieces){ p.obj.parent&&p.obj.parent.remove(p.obj); p.node.parent&&p.node.parent.remove(p.node); }
+  if(G.current&&G.current.obj.parent) G.current.obj.parent.remove(G.current.obj);
+  for(const s of G.squash){ if(s.obj.parent) s.obj.parent.remove(s.obj); }
+  if(guide.parent) guide.parent.remove(guide);
+  if(warnRing.parent) warnRing.parent.remove(warnRing);
+  if(zoneRing.parent) zoneRing.parent.remove(zoneRing);
+  while(stackRoot.children.length) stackRoot.remove(stackRoot.children[0]);
+  G.pieces=[]; G.squash=[]; G.current=null; G.joints=[];
+  physWorld=null; physPairs=[];
+}
+function resetGame(){
+  clearScene();
+  G.state='play'; G.tension='calm';
+  G.stackH=0; G.bag=[]; G.queue=[];
+  G.ratio=0; G.bend=0; G.worst=0;
+  G.cdLeft=0; G.cdBeep=0; G.wobblePhase=0;
+  G.score=0; G.layers=0; G.missed=0;
+  G.finishing=false; G.drop=null; G.dragging=false; G.collapseAge=0;
+  camera.position.set(0,4.6,10.5); lookAt.set(0,1.6,0);
+  el.finishBtn.disabled=false;
+
+  const def=DEFS.bunBottom;
+  const node=new THREE.Group();
+  stackRoot.add(node);
+  const obj=def.build();
+  obj.position.set(0,def.h*0.5,0);
+  node.add(obj);
+  G.pieces.push({key:'bunBottom',def,ox:0,oz:0,baseY:0,node,obj,nodeBaseY:0});
+  G.stackH=def.h; G.layers=1;
+  computeStress();
+  updateZoneRing();
+  spawnCurrent();
+  updateHUD();
+}
+
+/* =========================================================
+   メインループ
+   ========================================================= */
+const clock=new THREE.Clock();
+const axisV=new THREE.Vector3();
+const tq=new THREE.Quaternion();
+const worldTop=new THREE.Vector3();
+
+/* 継ぎ目ごとに少しずつ曲げる。負荷の大きい継ぎ目ほど強く曲がるので、
+   どこが危ないかが見た目で分かる。物理演算ではなく計算結果の演出。 */
+function updateJoints(dt){
+  const jt=G.joints; if(!jt.length) return;
+  G.wobblePhase += dt*(G.tension==='danger'?11:6);
+  const amp = G.tension==='danger'?0.030 : G.tension==='warn'?0.010 : 0.0015;
+  // 継ぎ目1つあたりの回転には上限を設ける（薄い具材でも見た目が破綻しない角度）。
+  // かつ、負荷が高い継ぎ目に寄与が集中するよう重み付けし、
+  // 「全継ぎ目にちょっとずつ」曲がって遠くの具材まで大きくズレる、を防ぐ。
+  const PER_JOINT_MAX = 0.088; // 約5度。これ以上傾けると持ち上げ量が増えて浮いて見える
+                               // （段数が多ければ5度×段数で十分に大きな傾きになる）
+  const raw=[]; let sum=0;
+  for(const j of jt){
+    const a=Math.min(PER_JOINT_MAX, CFG.JOINT_TILT*Math.min(j.s,1.4)**CFG.TILT_VIS_POW);
+    raw.push(a); sum+=a;
+  }
+  const scale = sum>CFG.MAX_BEND ? CFG.MAX_BEND/sum : 1;
+  const k=Math.min(1,dt*7);
+
+  // 傾ける「方向」は全継ぎ目で共通にする。継ぎ目ごとに向きを変えると
+  // 木がねじれたような不自然な見た目になるため、負荷で重み付けした
+  // 平均方向をひとつだけ求め、全継ぎ目がその同じ方向へ傾くようにする。
+  // （量＝どれだけ傾くかは継ぎ目ごとに変える。方向は揃える。）
+  let gx=0, gz=0;
+  for(const j of jt){ gx+=j.dx*j.s; gz+=j.dz*j.s; }
+  const gn=Math.hypot(gx,gz);
+  if(gn>1e-5){ axisV.set(gz/gn,0,-gx/gn); } else { axisV.set(1,0,0); }
+
+  let total=0;
+  for(let i=0;i<jt.length;i++){
+    const j=jt[i], p=G.pieces[i]; if(!p) continue;
+    let a=Math.min(PER_JOINT_MAX, raw[i]*scale);
+    if(G.ratio>0.001) a += Math.sin(G.wobblePhase+i*0.8)*amp*(j.s/G.ratio);
+    total+=a;
+    tq.setFromAxisAngle(axisV,a);
+    p.node.quaternion.slerp(tq,k);
+    // 傾けた円盤を平面に置くと、接地は縁の一点になり中心は r*sin(θ) だけ浮く。
+    // この持ち上げをしないと、縁が下の具材にめり込んで見える。
+    if(p.nodeBaseY!==undefined){
+      const lift=p.def.r*Math.abs(Math.sin(a));
+      p.node.position.y += ((p.nodeBaseY+lift)-p.node.position.y)*k;
+    }
+  }
+  G.bend=total;
+  // 横倒しに近い角度になったら、負荷が閾値未満でも崩壊させる
+  if(G.state==='play' && total>=CFG.BEND_INSTANT){ startCollapse(); return; }
+  // 警告リング：いちばん負荷の高い継ぎ目に出す（worst=0 はお皿との接地）
+  if(G.tension!=='calm' && G.pieces[G.worst]){
+    const host=G.pieces[G.worst].node;
+    if(warnRing.parent!==host) host.add(warnRing);   // 同じ親なら付け替えない
+    const rad = G.worst===0 ? CFG.PLATE_R : G.pieces[G.worst-1].def.r*CFG.SUPPORT_FRAC;
+    warnRing.position.set(0,0.02,0);
+    warnRing.scale.setScalar(rad);
+    warnRing.material.color.setHex(G.tension==='danger'?0xE8402A:0xFFC93C);
+    warnRing.visible=true;
+  } else warnRing.visible=false;
+}
+
+function updateCamera(dt){
+  const lp=lastPiece();
+  if(lp){ worldTop.set(0,lp.def.h,0); lp.node.localToWorld(worldTop); }
+  else worldTop.set(0,PLATE_TOP,0);
+  const top=Math.max(0,worldTop.y-PLATE_TOP);
+  const aspectComp=Math.min(2.0,Math.max(1,1.28/camera.aspect));
+  const dist=(8.6+top*0.95)*aspectComp;
+  const hgt=3.9+top*0.70;
+  const tgtY=PLATE_TOP+top*0.55;
+  // スタックを中央よりやや左に寄せ、右側をトレイ用に空ける
+  const lateral = -0.65*aspectComp;
+  const k=1-Math.pow(0.0015,dt);
+  camera.position.x+=(lateral-camera.position.x)*k;
+  camera.position.y+=(hgt-camera.position.y)*k;
+  camera.position.z+=(dist-camera.position.z)*k;
+  lookAt.x+=(lateral-lookAt.x)*k;
+  lookAt.y+=(tgtY-lookAt.y)*k;
+  camera.lookAt(lookAt);
+  sun.position.set(6,14+tgtY,8);
+  sun.target.position.set(0,tgtY,0);
+}
+
+function tick(){
+  requestAnimationFrame(tick);
+  let dt=clock.getDelta();
+  if(dt>1/30) dt=1/30;                 // 120Hz ProMotion 対策
+  G.frames++; G.elapsed+=dt;
+
+  if(G.state==='drop'&&G.drop){
+    G.drop.v+=CFG.DROP_G*dt;
+    G.drop.y-=G.drop.v*dt;
+    if(G.drop.y<=G.drop.target){ G.drop=null; commitPiece(); }
+    else if(G.current){ G.current.wy=G.drop.y; G.current.obj.position.y=G.drop.y; }
+  }
+
+  for(let i=G.squash.length-1;i>=0;i--){
+    const s=G.squash[i]; s.t+=dt;
+    if(s.fall){
+      s.fall.vy-=30*dt;
+      s.obj.position.x+=s.fall.vx*dt;
+      s.obj.position.z+=s.fall.vz*dt;
+      s.obj.position.y+=s.fall.vy*dt;
+      s.obj.rotation.z+=s.fall.spin*dt;
+      if(s.obj.position.y<-5){ s.obj.parent&&s.obj.parent.remove(s.obj); G.squash.splice(i,1); }
+      continue;
+    }
+    const k=Math.min(1,s.t/0.26), e=1-Math.pow(1-k,3);
+    const w=1+(1-e)*0.16;
+    s.obj.scale.set(w, 1-(1-e)*0.30*Math.cos(k*Math.PI*1.6), w);
+    if(k>=1){ s.obj.scale.set(1,1,1); G.squash.splice(i,1); }
+  }
+
+  if(G.tension==='danger'&&(G.state==='play'||G.state==='drop')){
+    G.cdLeft-=dt;
+    const p=1-Math.max(0,G.cdLeft)/CFG.DANGER_TIME;
+    G.cdBeep-=dt;
+    if(G.cdBeep<=0){ SFX.beep(p); G.cdBeep=0.62-0.40*p; }
+    if(G.cdLeft<=0) startCollapse();
+  }
+
+  if(G.state!=='collapse'){
+    updateJoints(dt);
+    if(G.current&&!G.drop) layoutCurrent();
+  } else if(physWorld){
+    G.collapseAge+=dt;
+    physWorld.step(1/60,dt,3);
+    for(const pr of physPairs){
+      pr.obj.position.set(pr.body.position.x,pr.body.position.y,pr.body.position.z);
+      pr.obj.quaternion.set(pr.body.quaternion.x,pr.body.quaternion.y,pr.body.quaternion.z,pr.body.quaternion.w);
+    }
+  }
+
+  updateCamera(dt);
+  updateHUD();
+  renderer.render(scene,camera);
+}
+
+function resize(){
+  const w=window.innerWidth, h=window.innerHeight;
+  renderer.setSize(w,h,false);
+  camera.aspect=w/h; camera.updateProjectionMatrix();
+  updateTrayAnchor();
+}
+window.addEventListener('resize',resize);
+window.addEventListener('orientationchange',()=>setTimeout(resize,120));
+resize(); tick();
+
+/* =========================================================
+   テスト用フック
+   ---------------------------------------------------------
+   ・具材の位置は mesh.position ではなく内部データモデル
+     pieces[].ox / oz / baseY で駆動している。検証はこちらを見ること。
+   ・見た目の曲がりは joints[].s（継ぎ目ごとの負荷）から導いた演出であり
+     物理シミュレーションの結果ではない。cannon-es は崩壊時のみ動く。
+   ・current は掴んでいる具材。held中はワールド座標 wx/wy/wz で動く。
+     タワー直前具材の上まで運ばれる(placing=true)と、その時点の
+     直前具材からの相対座標が rx/rz に入り、それが判定に使われる。
+   ========================================================= */
+window.__G=G;
+window.__CAMERA_REF=camera; // デバッグ・座標検証用
+window.__game={
+  get state(){return G.state;},
+  get tension(){return G.tension;},
+  get score(){return G.score;},
+  get layers(){return G.layers;},
+  get heightCm(){return Math.round(G.stackH*10);},
+  get ratio(){return G.ratio;},
+  get worstJoint(){return G.worst;},
+  get joints(){return G.joints.map(j=>({dx:j.dx,dz:j.dz,s:j.s}));},
+  get bend(){return G.bend;},
+  get cdLeft(){return G.cdLeft;},
+  get frames(){return G.frames;},
+  get elapsed(){return G.elapsed;},
+  get missed(){return G.missed;},
+  get pieces(){return G.pieces.map(p=>({key:p.key,ox:p.ox,oz:p.oz,baseY:p.baseY,w:p.def.w,r:p.def.r}));},
+  get current(){return G.current?{key:G.current.key,placing:G.current.placing,rx:G.current.rx,rz:G.current.rz,wx:G.current.wx,wy:G.current.wy,wz:G.current.wz}:null;},
+  get queue(){return G.queue.slice();},
+  CFG,
+  api:{
+    start(){ const b=document.getElementById('startBtn'); if(b) b.click(); else resetGame(); },
+    restart(){ el.overlay.classList.remove('on'); resetGame(); },
+    // 直前具材からの相対座標(rx,rz)を指定して、その真上まで運んでから落とす。
+    // ドラッグ操作と同じ判定経路（placing判定→onUp）を通る。
+    // 直前具材の"傾く前の"基準位置から見た相対オフセット(rx,rz)を、
+    // 現在のワールド座標に変換して落とす。ドラッグ操作と同じ判定経路（placing判定→onUp）を通る。
+    drop(rx,rz){
+      if(G.state!=='play'||!G.current) return false;
+      if(G.current.inTray) grabCurrentToWorld();
+      const base=topWorld().clone(); // 直前具材の実際の頂上ワールド座標
+      G.current.wx=base.x+rx; G.current.wy=base.y+0.8; G.current.wz=base.z+rz;
+      layoutCurrent();
+      G.dragging=true; onUp();
+      return true;
+    },
+    finish(){ el.finishBtn.click(); },
+    forceCollapse(){ startCollapse(); },
+  },
+};
+</script>
+</body>
+</html>
