@@ -38,9 +38,10 @@ html,body{
 .sw{width:18px;height:18px;border-radius:5px;border:2px solid var(--ink);flex:0 0 auto;}
 .nx.second .sw{width:13px;height:13px;border-radius:4px;}
 
-#balance{position:absolute;left:50%;transform:translateX(-50%);
-  top:calc(env(safe-area-inset-top,0px) + 110px);
-  display:flex;flex-direction:column;align-items:center;gap:5px;width:min(210px,58vw);}
+/* バランスゲージ：タワーの真上を空けるため左に寄せる */
+#balance{position:absolute;left:10px;
+  top:calc(env(safe-area-inset-top,0px) + 104px);
+  display:flex;flex-direction:column;align-items:flex-start;gap:5px;width:150px;}
 #tiltIcon{width:44px;height:34px;display:flex;flex-direction:column;justify-content:center;gap:2px;
   transform-origin:50% 100%;}
 #tiltIcon i{display:block;height:6px;border-radius:3px;border:2px solid var(--ink);}
@@ -53,10 +54,10 @@ html,body{
 #barText{font-size:12px;font-weight:700;color:var(--ink);background:var(--cream);
   border:2px solid var(--ink);border-radius:10px;padding:1px 10px;letter-spacing:.06em;white-space:nowrap;}
 
-#countdown{position:absolute;left:50%;transform:translateX(-50%) scale(.9);
-  top:calc(env(safe-area-inset-top,0px) + 186px);width:min(210px,58vw);
+#countdown{position:absolute;left:10px;transform:scale(.9);transform-origin:left center;
+  top:calc(env(safe-area-inset-top,0px) + 186px);width:150px;
   opacity:0;pointer-events:none;transition:opacity .15s,transform .15s;}
-#countdown.on{opacity:1;transform:translateX(-50%) scale(1);}
+#countdown.on{opacity:1;transform:scale(1);}
 #cdTrack{position:relative;height:24px;background:var(--cream);border:3px solid var(--ink);
   border-radius:13px;overflow:hidden;box-shadow:0 3px 0 var(--ink);}
 #cdFill{height:100%;width:100%;background:var(--ketchup);}
@@ -161,17 +162,17 @@ import * as CANNON from 'cannon-es';
    CONFIG（チューニングはすべてここ）
    ========================================================= */
 const CFG = {
-  SUPPORT_FRAC : 0.85,  // 継ぎ目の許容半径 = 下の具材の半径 × これ（崩壊判定用・緩め）
-  PLATE_R      : 1.60,  // お皿の支持半径（崩壊判定用・緩め）
+  SUPPORT_FRAC : 1.00,  // 継ぎ目の許容半径 = 下の具材の半径 × これ（崩壊判定用・緩め）
+  PLATE_R      : 1.90,  // お皿の支持半径（崩壊判定用・緩め）
   WARN         : 0.55,
-  DANGER       : 0.85,
-  INSTANT      : 1.45,
+  DANGER       : 0.95,
+  INSTANT      : 1.75,
   HYST         : 0.06,
-  DANGER_TIME  : 4.0,
+  DANGER_TIME  : 7.0,   // ぐらぐら耐える時間をたっぷり取る
   TILT_VIS_POW : 1.0,   // 見た目の傾き＝負荷の何乗で出すか（1.0=負荷に比例、控えめ）
   JOINT_TILT   : 0.11,  // 負荷1.0の継ぎ目が曲がる角度(rad)（見た目用・控えめ）
   MAX_BEND     : 0.85,  // 曲がりの合計上限(rad≒49°)。1継ぎ目の角度は別途抑えてあるので大きく傾けてよい
-  BEND_INSTANT : 1.15,  // 曲がりの合計がこれを超えたら「横倒し」扱いで即アウト
+  BEND_INSTANT : 1.35,  // 曲がりの合計がこれを超えたら「横倒し」扱いで即アウト
   REACH        : 2.2,   // 空中の具材がタワー中心から離れられる最大半径
   SUPPORT      : 0.92,  // 下の具材の半径×これ を超えると滑り落ちる
   JITTER       : 0.030, // 着地のズレ（高いほど大きい）
@@ -437,6 +438,8 @@ const lastPiece=()=>G.pieces[G.pieces.length-1];
 /* 直前具材の"実際の"頂上ワールド座標。タワーが曲がると理論値より下がるので、
    高さ関係の判定は必ずこれを基準にする（理論値 baseY を使うと曲がった時に破綻する）。 */
 const _topTmp=new THREE.Vector3();
+const _camDir=new THREE.Vector3();
+const _camRight=new THREE.Vector3();
 function topWorld(){
   const lp=lastPiece();
   if(!lp) return _topTmp.set(0,PLATE_TOP,0);
@@ -447,15 +450,25 @@ function topWorld(){
 /* ---- 具材の生成：タワーの真上の空中に、まっすぐな姿勢で浮かべる ----
    親はシーン直下（ワールド座標）。カメラやタワーの傾きを引き継がないので、
    具材が斜めに見えることがない。これを直接つかんで動かす。 */
+/* ---- 具材の生成：タワーの真上ではなく、横にずらした位置に浮かべる ----
+   プレイヤーはこれをタワーの上までスワイプして運ぶ。
+   親はシーン直下（ワールド座標）なので、カメラやタワーの傾きを引き継がず、
+   常にまっすぐな姿勢で浮かぶ。 */
 function spawnCurrent(forceKey){
   const key=forceKey||pullKey();
   const def=DEFS[key];
   const obj=def.build();
   const t=topWorld();
-  obj.position.set(t.x, t.y+CFG.HOVER_GAP, t.z);
+  // カメラの右方向へオフセットして出す（画面上でタワーの横に見える）
+  camera.getWorldDirection(_camDir);
+  _camRight.set(_camDir.z,0,-_camDir.x).normalize(); // カメラ右方向（水平面）
+  const offset=2.6;
+  const sx=t.x+_camRight.x*offset, sz=t.z+_camRight.z*offset;
+  const sy=t.y;   // 判定用の高さ（見た目はlayoutCurrentでHOVER_GAPぶん浮かせる）
+  obj.position.set(sx, sy+CFG.HOVER_GAP, sz);
   scene.add(obj);
   G.current={key,def,obj,held:false,placing:true,
-             rx:0,rz:0,wx:t.x,wy:t.y+CFG.HOVER_GAP,wz:t.z};
+             rx:0,rz:0,wx:sx,wy:sy,wz:sz};
   layoutCurrent();
   updateNextUI();
   el.pieceName.innerHTML = G.finishing ? 'さいごの <b>バンズ</b> を置く！' : 'いま：<b>'+def.name+'</b>';
@@ -474,18 +487,24 @@ function updateZoneRing(){
 function layoutCurrent(){
   const c=G.current; if(!c) return;
   const lp=lastPiece();
-  // 直前具材の中心からどれだけ離れているか（傾いた座標系に変換して測る）
-  const local=lp.node.worldToLocal(new THREE.Vector3(c.wx, c.wy, c.wz));
+  const t=topWorld();
+  // 【重要】判定用の位置は「タワー頂上の高さ」で扱う。
+  // 具材を高く浮かせたまま判定すると、斜め見下ろしのカメラでは
+  // 画面上でパンに重ねても内部的には手前にズレた位置になり、
+  // 「真上に置いたのに外れ判定」になる（磁石で避けるような挙動）。
+  c.wy=t.y;
+  const local=lp.node.worldToLocal(new THREE.Vector3(c.wx, t.y, c.wz));
   let dx=local.x, dz=local.z;
   const d0=Math.hypot(dx,dz);
-  // タワーから離れすぎないように制限（空中の具材はタワーの近くを漂う）
-  if(d0>CFG.REACH){ dx=dx/d0*CFG.REACH; dz=dz/d0*CFG.REACH;
+  if(d0>CFG.REACH){
+    dx=dx/d0*CFG.REACH; dz=dz/d0*CFG.REACH;
     const back=lp.node.localToWorld(new THREE.Vector3(dx, local.y, dz));
     c.wx=back.x; c.wz=back.z;
   }
-  c.obj.position.set(c.wx,c.wy,c.wz);
   c.rx=dx; c.rz=dz;
   c.placing=true;
+  // 見た目だけ浮かせる（指で隠れず、落ちる先はガイドリングで分かる）
+  c.obj.position.set(c.wx, t.y+CFG.HOVER_GAP, c.wz);
   const d=Math.hypot(dx,dz);
   const ok=d<=lp.def.r*CFG.SUPPORT;
   guide.visible=true;
@@ -658,9 +677,14 @@ function applyPointer(clientX,clientY){
   const c=G.current; if(!c) return;
   const rect=canvas.getBoundingClientRect();
   ndc.x=((clientX-rect.left)/rect.width)*2-1;
-  ndc.y=-((clientY-rect.top-56)/rect.height)*2+1;   // 指で隠れないよう少し上を狙う
-  dragPlane.constant=-c.wy;
+  ndc.y=-((clientY-rect.top)/rect.height)*2+1;
   ray.setFromCamera(ndc,camera);
+  // 指の位置に「浮いて見えている具材」を合わせつつ、
+  // 判定はその真下（タワー頂上の高さ）で行いたい。
+  // 視差をなくすため、カメラから指方向へ伸ばした線が
+  // 浮遊高さの平面と交わる点をとり、そのXZを判定位置とする。
+  // （具材はそのXZの真上に描かれるので、見た目と判定が一致する）
+  dragPlane.constant=-(c.wy+CFG.HOVER_GAP);
   if(!ray.ray.intersectPlane(dragPlane,hit)) return;
   c.wx=hit.x; c.wz=hit.z;
   layoutCurrent();
@@ -689,7 +713,7 @@ function onUp(){
   G.state='drop';
   const lpTopWorld=new THREE.Vector3(0,lp.def.h,0);
   lp.node.localToWorld(lpTopWorld);
-  G.drop={y:c.wy, v:0, target:lpTopWorld.y+c.def.h*0.5};
+  G.drop={y:c.obj.position.y, v:0, target:lpTopWorld.y+c.def.h*0.5};
 }
 canvas.addEventListener('pointerdown',onDown);
 window.addEventListener('pointermove',onMove);
@@ -833,8 +857,8 @@ const worldTop=new THREE.Vector3();
    どこが危ないかが見た目で分かる。物理演算ではなく計算結果の演出。 */
 function updateJoints(dt){
   const jt=G.joints; if(!jt.length) return;
-  G.wobblePhase += dt*(G.tension==='danger'?11:6);
-  const amp = G.tension==='danger'?0.030 : G.tension==='warn'?0.010 : 0.0015;
+  G.wobblePhase += dt*(G.tension==='danger'?7.5:4.5); // ゆっくり大きく揺らす
+  const amp = G.tension==='danger'?0.055 : G.tension==='warn'?0.022 : 0.0015; // ぐらぐら感を強調
   // 継ぎ目1つあたりの回転には上限を設ける（薄い具材でも見た目が破綻しない角度）。
   // かつ、負荷が高い継ぎ目に寄与が集中するよう重み付けし、
   // 「全継ぎ目にちょっとずつ」曲がって遠くの具材まで大きくズレる、を防ぐ。
@@ -893,11 +917,12 @@ function updateCamera(dt){
   else worldTop.set(0,PLATE_TOP,0);
   const top=Math.max(0,worldTop.y-PLATE_TOP);
   const aspectComp=Math.min(2.0,Math.max(1,1.28/camera.aspect));
-  const dist=(8.6+top*0.95)*aspectComp;
-  const hgt=3.9+top*0.70;
-  const tgtY=PLATE_TOP+top*0.55;
-  // スタックを中央よりやや左に寄せ、右側をトレイ用に空ける
-  const lateral = -0.65*aspectComp;
+  const dist=(9.2+top*1.05)*aspectComp;
+  const hgt=4.0+top*0.72;
+  // タワーの頂上が画面上部のゲージ帯（HUD）と被らないよう、
+  // 注視点をタワー中心よりやや高めに取り、タワーが画面下寄りに収まるようにする
+  const tgtY=PLATE_TOP+top*0.72;
+  const lateral=0; // トレイは廃止したので中央配置でよい
   const k=1-Math.pow(0.0015,dt);
   camera.position.x+=(lateral-camera.position.x)*k;
   camera.position.y+=(hgt-camera.position.y)*k;
